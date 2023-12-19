@@ -10,6 +10,7 @@ import (
 	"slices"
 	"strings"
 	"time"
+	"crypto/subtle"
 )
 
 var templates = template.Must(template.ParseFiles("pages/index.html", "pages/username-to-ips.html", "pages/ip-to-usernames.html", "pages/find-alts.html"))
@@ -203,6 +204,10 @@ func getAllHistoricalUsernames() []string {
 }
 
 func findAlts(targetUsername string) []string {
+	if len(targetUsername) < 3 || len(targetUsername) > 26 { // Arbitrary limit at this point
+		return []string{}
+	}
+
 	ips := usernameToIPs(targetUsername)
 
 	var altAccounts []string
@@ -224,26 +229,53 @@ func findAlts(targetUsername string) []string {
 	return altAccounts
 }
 
+
 func handler(w http.ResponseWriter, r *http.Request) {
 	username, password, ok := r.BasicAuth()
 	if !ok {
-		//		w.WriteHeader(http.StatusUnauthorized)
 		w.Header().Set("WWW-Authenticate", "Basic realm=\"Access\"")
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		//		w.Write([]byte("bruh"))
 		return
 	}
 
-	if username != "kiva" || password != "password" {
-		//		w.WriteHeader(http.StatusUnauthorized)
+	auths := map[string]string{"auth1": "pass1", "auth2": "pass2"}
+	accessLevel := 0
+
+	for user, passwd := range auths {
+//		if username == auth && password == passwd {
+		if subtle.ConstantTimeCompare([]byte(username), []byte(user)) == 1 && subtle.ConstantTimeCompare([]byte(password), []byte(passwd)) == 1 {
+			if user == "auth1" {
+				accessLevel = 1
+			} else if user == "auth2" {
+				accessLevel = 2
+			}
+
+			break
+		}
+	}
+
+	if accessLevel == 0 {
 		w.Header().Set("WWW-Authenticate", "Basic realm=\"Access\"")
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		//		w.Write([]byte("bruh"))
 		return
 	}
 
 	if r.URL.Path == "/" {
 		templates.ExecuteTemplate(w, "index.html", FrontPage{NHistoricalUsers: nHistoricalUsersCached, FirstLogDate: firstLogDate})
+		return
+	}
+
+	if strings.HasPrefix(r.URL.Path, "/find-alts") {
+		params, _ := url.ParseQuery(r.URL.RawQuery)
+		username := strings.Trim(params.Get("username"), " ")
+
+		templates.ExecuteTemplate(w, "find-alts.html", FindAltsPage{NoParams: username == "", Username: username, AltAccounts: findAlts(username)})
+		return
+	}
+
+	// Don't give access to these next endpoints
+	if accessLevel != 2 {
+		http.NotFound(w, r)
 		return
 	}
 
@@ -265,14 +297,6 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		ipAddress := strings.Trim(params.Get("ipaddress"), " ")
 
 		templates.ExecuteTemplate(w, "ip-to-usernames.html", IPToUsernamesPage{NoParams: ipAddress == "", IP: ipAddress, Usernames: ipToUsernames(ipAddress)})
-		return
-	}
-
-	if strings.HasPrefix(r.URL.Path, "/find-alts") {
-		params, _ := url.ParseQuery(r.URL.RawQuery)
-		username := strings.Trim(params.Get("username"), " ")
-
-		templates.ExecuteTemplate(w, "find-alts.html", FindAltsPage{NoParams: username == "", Username: username, AltAccounts: findAlts(username)})
 		return
 	}
 
