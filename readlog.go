@@ -13,7 +13,14 @@ type LogEntry struct {
 
 func logLineToEntry(line string) (LogEntry, error) {
 	var entry LogEntry
-	entry.DateAndTime = line[:len("2023-09-12 17:39:54")]
+
+	dateLen := len("2023-09-12 17:39:54")
+
+	if len(line) < dateLen {
+		return entry, errors.New("No log date")
+	}
+
+	entry.DateAndTime = line[:dateLen]
 
 	logLevelStartIdx := strings.Index(line, "[")
 	logLevelEndIdx := strings.Index(line, "]")
