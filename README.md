@@ -5,7 +5,7 @@
 
 # How to install
 - Make sure you have [Go](https://go.dev) installed, and it's in your PATH environment variable
-- Change directory into your ReIndev server. This program looks for `server.log` in its parent folder to read from
+- Change directory into your ReIndev server. This program looks for `server.log` in the parent folder to read from
 - `git clone https://github.com/kivattt/reindev-dashboard`
 - `cd reindev-dashboard`
 - `go build main.go readlog.go`
