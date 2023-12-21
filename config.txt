@@ -1,0 +1,5 @@
+adminuser: admin
+adminpass: password
+
+staffuser: staff
+staffpass: password

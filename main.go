@@ -2,7 +2,9 @@ package main
 
 import (
 	"bufio"
+	"crypto/subtle"
 	"html/template"
+	"log"
 	"math/rand"
 	"net/http"
 	"net/url"
@@ -10,7 +12,6 @@ import (
 	"slices"
 	"strings"
 	"time"
-	"crypto/subtle"
 )
 
 var templates = template.Must(template.ParseFiles("pages/index.html", "pages/username-to-ips.html", "pages/ip-to-usernames.html", "pages/find-alts.html"))
@@ -18,6 +19,47 @@ var serverLogPath = "../server.log"
 
 var nHistoricalUsersCached = 0
 var firstLogDate = ""
+
+type Config struct {
+	AdminUser string
+	AdminPass string
+
+	StaffUser string
+	StaffPass string
+}
+
+var config Config
+
+func readConfig(filename string) error {
+	file, err := os.Open(filename)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+
+	varNameLen := len("adminuser: ")
+
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		if strings.HasPrefix(line, "adminuser: ") {
+			config.AdminUser = line[varNameLen:]
+
+		} else if strings.HasPrefix(line, "adminpass: ") {
+			config.AdminPass = line[varNameLen:]
+
+		} else if strings.HasPrefix(line, "staffuser: ") {
+			config.StaffUser = line[varNameLen:]
+
+		} else if strings.HasPrefix(line, "staffpass: ") {
+			config.StaffPass = line[varNameLen:]
+		}
+	}
+
+	return nil
+}
 
 type FrontPage struct {
 	NHistoricalUsers int
@@ -37,8 +79,8 @@ type IPToUsernamesPage struct {
 }
 
 type FindAltsPage struct {
-	NoParams bool
-	Username string
+	NoParams    bool
+	Username    string
 	AltAccounts []string
 }
 
@@ -229,7 +271,6 @@ func findAlts(targetUsername string) []string {
 	return altAccounts
 }
 
-
 func handler(w http.ResponseWriter, r *http.Request) {
 	username, password, ok := r.BasicAuth()
 	if !ok {
@@ -238,15 +279,14 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	auths := map[string]string{"auth1": "pass1", "auth2": "pass2"}
+	auths := map[string]string{config.StaffUser: config.StaffPass, config.AdminUser: config.AdminPass}
 	accessLevel := 0
 
 	for user, passwd := range auths {
-//		if username == auth && password == passwd {
 		if subtle.ConstantTimeCompare([]byte(username), []byte(user)) == 1 && subtle.ConstantTimeCompare([]byte(password), []byte(passwd)) == 1 {
-			if user == "auth1" {
+			if user == config.StaffUser {
 				accessLevel = 1
-			} else if user == "auth2" {
+			} else if user == config.AdminUser {
 				accessLevel = 2
 			}
 
@@ -328,6 +368,15 @@ func angelPNGHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	err := readConfig("config.txt")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if config.AdminPass == "password" || config.StaffPass == "password" {
+		log.Fatal("You need to set secure passwords in config.txt, exiting...")
+	}
+
 	getAllHistoricalUsernames() // Updates the nHistoricalUsersCached
 	firstLogDate = getFirstLogDate()
 
