@@ -3,3 +3,5 @@ adminpass: password
 
 staffuser: staff
 staffpass: password
+
+serverport: 8080
