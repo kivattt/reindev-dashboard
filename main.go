@@ -26,6 +26,8 @@ type Config struct {
 
 	StaffUser string
 	StaffPass string
+	
+	ServerPort string
 }
 
 var config Config
@@ -55,6 +57,9 @@ func readConfig(filename string) error {
 
 		} else if strings.HasPrefix(line, "staffpass: ") {
 			config.StaffPass = line[varNameLen:]
+			
+		} else if strings.HasPrefix(line, "serverport: ") {
+			config.ServerPort = line[varNameLen:]
 		}
 	}
 
@@ -389,5 +394,5 @@ func main() {
 	http.HandleFunc("/img/bg.png", bgPNGHandler)
 	http.HandleFunc("/img/angel.png", angelPNGHandler)
 
-	http.ListenAndServe(":8080", nil)
+	http.ListenAndServe(":"+config.ServerPort, nil)
 }
