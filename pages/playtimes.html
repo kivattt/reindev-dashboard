@@ -3,6 +3,7 @@
 <html>
 <head>
 	<link rel="stylesheet" type="text/css" href="/main.css">
+	<script src="https://www.kryogenix.org/code/browser/sorttable/sorttable.js"></script>
 </head>
 
 <body style="background-color:#000000; color:#ffffff">
@@ -22,10 +23,28 @@
 		<a href="/playtimes">Playtimes</a>
 	</div>
 
-	<div class="pagecontent" style="text-align: center">
-		<img src="/img/angel.png">
-		PRS has had <b>{{.NHistoricalUsers}}</b> unique players join the server since <b>{{.FirstLogDate}}</b>
+	<div class="pagecontent">
+		<h1><b>Playtimes</b></h1>
+		<div style="color: #9d9d9d">
+			Click "Playtime (s)" to sort!
 		</div>
+		<br>
+
+		<table class="sortable">
+			<tr>
+				<th>Username</th>
+				<th>Playtime</th>
+				<th>Playtime (s)</th>
+			</tr>
+
+			{{range .}}
+			<tr>
+				<td>{{.Username}}</td>
+				<td style="color: #9d9d9d">{{.Playtime}}</td>
+				<td style="color: #9d9d9d">{{.PlaytimeSeconds}}</td>
+			</tr>
+			{{end}}
+		</table>
 	</div>
 </body>
 

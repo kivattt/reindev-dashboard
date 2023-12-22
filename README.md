@@ -2,6 +2,7 @@
 - Username to IPs
 - IP to usernames
 - Find alts (based on IP)
+- See your players total playtimes
 
 # How to install
 - Make sure you have [Go](https://go.dev) installed, and it's in your PATH environment variable
@@ -14,6 +15,9 @@
 - Reach it at `localhost:8080`
 
 # Important info
-The admin user has full access to the tools. \
-The staff user only has access to the `find-alts` tool, because it should not leak any IP addresses. \
+This is an HTTP server. Everything can be intercepted by your ISP, local starbucks squatter or big brother \
+So use a unique password, and not one you use elsewhere.
+
+The admin user has full access to the tools \
+The staff user only has access to the `find-alts` tool, because it should not leak any IP addresses \
 Give your staff team access to the staff user, to not leak any IP addresses from the `server.log`

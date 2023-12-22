@@ -165,3 +165,18 @@ a:hover{
 .leftsidebar a:hover{
         background-color: var(--leftsidebaritemhoverbg);
 }
+
+table, th {
+	border: 1px solid #ffffff;
+	border-collapse: collapse;
+}
+
+td {
+	border-right: 1px solid #ffffff;
+	border-left: 1px solid #ffffff;
+}
+
+th, td {
+	padding-left: 10px;
+	padding-right: 10px;
+}

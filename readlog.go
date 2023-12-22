@@ -3,12 +3,23 @@ package main
 import (
 	"errors"
 	"strings"
+	"time"
 )
 
 type LogEntry struct {
 	DateAndTime string
 	LogLevel    string
 	Message     string
+}
+
+func dateToEpoch(date string) (int, error) {
+	time, err := time.Parse(time.DateTime, date)
+
+	if err != nil {
+		return 0, err
+	}
+
+	return int(time.Unix()), nil
 }
 
 func logLineToEntry(line string) (LogEntry, error) {
@@ -67,11 +78,6 @@ func getUsernameAndIP(message string) (string, string, error) {
 
 	username, _, found := strings.Cut(message, " ")
 
-	/*if username == "ivattt" {
-		fmt.Println(message)
-		fmt.Println(username)
-	}*/
-
 	if !found {
 		return "", "", errors.New("")
 	}
@@ -79,34 +85,51 @@ func getUsernameAndIP(message string) (string, string, error) {
 	return username, ip, nil
 }
 
-// TODO Make it return both username and IP when present
-/*func logMessageHasUsernameAndIP(message string) (bool, string) {
-	if strings.HasPrefix(message, "Disconnecting ") {
-		message = message[len("Disconnecting ")+1:]
+// Returns Username, join=0 disconnect=1 disconnect all (server stopped)=2, error
+func getUsernameJoinOrLeave(message string) (string, int, error) {
+	if message == "Stopping server" || strings.HasPrefix(message, "Starting Minecraft server version: "){
+		return "", 2, nil
 	}
 
-	nUsernameChars := 0
-	for i := range message {
-		if string(message[i]) == " " {
-			break
-		}
+	ipFieldStartIdx := strings.Index(message, "[/")
+	ipFieldEndIdx := strings.Index(message, "]")
+	ipEndIdx := strings.Index(message, ":")
 
-		nUsernameChars++
+	spaceIdx := strings.Index(message, " ")
+	if spaceIdx == -1 {
+		return "", 0, errors.New("No whitespace in message")
 	}
+
+	username := message[:spaceIdx]
 
 	// Minecraft usernames are at a minimum 3 characters
-	if nUsernameChars < 3 {
-		return false, ""
+	if len(username) < 3 {
+		return "", 0, errors.New("Length of first word in message less than 3")
 	}
 
-	if !strings.Contains(message, "[/") || !strings.Contains(message, "]") {
-		return false, ""
+	if (ipFieldStartIdx != -1) && (ipFieldEndIdx != -1) && (ipEndIdx != -1) {
+		if strings.Contains(message, "] logged in with entity id ") {
+			return username, 0, nil
+		}
 	}
 
-	username, _, found := strings.Cut(message, " ")
-	if !found {
-		return false, ""
+	if strings.Contains(message, " lost connection: ") {
+		return username, 1, nil
 	}
 
-	return true, username
-}*/
+	usernameFromEnd := message[strings.LastIndex(message, " ")+1:]
+
+	if (strings.HasPrefix(message, "CONSOLE: Banning ") && !strings.Contains(message, "CONSOLE: Banning ip")) || strings.HasPrefix(message, "CONSOLE: Kicking ") {
+		return usernameFromEnd, 1, nil
+	}
+
+	if (strings.Contains(message, ": Banning ") && !strings.Contains(message, ": Banning ip ")) || strings.Contains(message, ": §eKicked player ") {
+		if message[len(message)-1] == '!' {
+			return usernameFromEnd[:len(usernameFromEnd)-1], 1, nil
+		}
+
+		return usernameFromEnd, 1, nil
+	}
+
+	return "", 0, errors.New("Not a join/disconnect line")
+}

@@ -14,13 +14,16 @@ import (
 	"time"
 )
 
-var templates = template.Must(template.ParseFiles("pages/index.html", "pages/username-to-ips.html", "pages/ip-to-usernames.html", "pages/find-alts.html"))
+var templates = template.Must(template.ParseFiles("pages/index.html", "pages/username-to-ips.html", "pages/ip-to-usernames.html", "pages/find-alts.html", "pages/playtimes.html"))
 var serverLogPath = "../server.log"
 
 var nHistoricalUsersCached = 0
 var firstLogDate = ""
+var playtimesCached = make(map[string]int)
 
 type Config struct {
+	Port string
+
 	AdminUser string
 	AdminPass string
 
@@ -55,6 +58,9 @@ func readConfig(filename string) error {
 
 		} else if strings.HasPrefix(line, "staffpass: ") {
 			config.StaffPass = line[varNameLen:]
+
+		} else if strings.HasPrefix(line, "port: ") {
+			config.Port = line[len("port: "):]
 		}
 	}
 
@@ -82,6 +88,12 @@ type FindAltsPage struct {
 	NoParams    bool
 	Username    string
 	AltAccounts []string
+}
+
+type UsernameAndPlaytime struct {
+	Username string
+	Playtime string
+	PlaytimeSeconds int
 }
 
 func getFirstLogDate() string {
@@ -245,6 +257,99 @@ func getAllHistoricalUsernames() []string {
 	return usernames
 }
 
+func getAllUsersPlaytimesInSeconds() map[string]int {
+	file, err := os.Open(serverLogPath)
+	if err != nil {
+		return map[string]int{}
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+
+	playtimes := make(map[string]int)
+	lastJoins := make(map[string]int) // Unix epoch
+	var playersOnline []string
+
+	for scanner.Scan() {
+		line := scanner.Text()
+
+		entry, err := logLineToEntry(line)
+		if err != nil {
+			continue
+		}
+
+		if entry.LogLevel != "INFO" {
+			continue
+		}
+
+		username, action, err := getUsernameJoinOrLeave(entry.Message)
+		if err != nil {
+			continue
+		}
+
+		switch action {
+		case 0: // Join
+			playersOnline = append(playersOnline, username)
+
+			lastJoins[username], err = dateToEpoch(entry.DateAndTime)
+			if err != nil {
+				continue // Shouldn't happen
+			}
+
+			_, ok := playtimes[username]
+			if !ok {
+				playtimes[username] = 0
+			}
+		case 1: // Disconnect
+			playersOnline = slices.DeleteFunc(playersOnline, func(e string) bool {return e == username})
+
+			lastJoinTime, ok := lastJoins[username]
+			if !ok {
+				continue
+			}
+
+			disconnectTime, err := dateToEpoch(entry.DateAndTime)
+			if err != nil {
+				continue // Shouldn't happen
+			}
+
+			_, ok = playtimes[username]
+			if !ok {
+				playtimes[username] = 0
+			}
+
+			playtimes[username] += disconnectTime - lastJoinTime
+		case 2: // Disconnect all (server started/stopped)
+			for _, username := range playersOnline {
+				lastJoinTime, ok := lastJoins[username]
+				if !ok {
+					continue
+				}
+
+				disconnectTime, err := dateToEpoch(entry.DateAndTime)
+				if err != nil {
+					continue // Shouldn't happen
+				}
+
+				_, ok = playtimes[username]
+				if !ok {
+					playtimes[username] = 0
+				}
+
+				playtimes[username] += disconnectTime - lastJoinTime
+			}
+
+			playersOnline = nil
+		}
+	}
+
+	if err := scanner.Err(); err != nil {
+		return map[string]int{}
+	}
+
+	return playtimes
+}
+
 func findAlts(targetUsername string) []string {
 	if len(targetUsername) < 3 || len(targetUsername) > 26 { // Arbitrary limit at this point
 		return []string{}
@@ -313,6 +418,16 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if strings.HasPrefix(r.URL.Path, "/playtimes") {
+		var playTimes []UsernameAndPlaytime
+		for player, playtime := range playtimesCached {
+			playTimes = append(playTimes, UsernameAndPlaytime{Username: player, Playtime: time.Duration(playtime * 1000000000).String(), PlaytimeSeconds: playtime})
+		}
+
+		templates.ExecuteTemplate(w, "playtimes.html", playTimes)
+		return
+	}
+
 	// Don't give access to these next endpoints
 	if accessLevel != 2 {
 		http.NotFound(w, r)
@@ -377,6 +492,11 @@ func main() {
 		log.Fatal("You need to set secure passwords in config.txt, exiting...")
 	}
 
+	playtimesCached = getAllUsersPlaytimesInSeconds()
+/*	for a, b := range playTimesCached {
+		fmt.Println(a, b)
+	}*/
+
 	getAllHistoricalUsernames() // Updates the nHistoricalUsersCached
 	firstLogDate = getFirstLogDate()
 
@@ -389,5 +509,5 @@ func main() {
 	http.HandleFunc("/img/bg.png", bgPNGHandler)
 	http.HandleFunc("/img/angel.png", angelPNGHandler)
 
-	http.ListenAndServe(":8080", nil)
+	http.ListenAndServe(":"+config.Port, nil)
 }

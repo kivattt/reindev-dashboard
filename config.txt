@@ -1,5 +1,7 @@
+port: 8080
+
 adminuser: admin
-adminpass: password
+adminpass: admin
 
 staffuser: staff
-staffpass: password
+staffpass: staff
