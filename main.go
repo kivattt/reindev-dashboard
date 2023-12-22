@@ -20,6 +20,7 @@ var serverLogPath = "../server.log"
 var nHistoricalUsersCached = 0
 var firstLogDate = ""
 var playtimesCached = make(map[string]int)
+var totalHoursPlayedCached float64 = 0
 
 type Config struct {
 	Port string
@@ -70,6 +71,7 @@ func readConfig(filename string) error {
 type FrontPage struct {
 	NHistoricalUsers int
 	FirstLogDate     string
+	TotalHoursPlayed float64
 }
 
 type UsernameToIPsPage struct {
@@ -410,7 +412,7 @@ func handler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if r.URL.Path == "/" {
-		templates.ExecuteTemplate(w, "index.html", FrontPage{NHistoricalUsers: nHistoricalUsersCached, FirstLogDate: firstLogDate})
+		templates.ExecuteTemplate(w, "index.html", FrontPage{NHistoricalUsers: nHistoricalUsersCached, FirstLogDate: firstLogDate, TotalHoursPlayed: float64(int(totalHoursPlayedCached))})
 		return
 	}
 
@@ -497,6 +499,10 @@ func main() {
 	}
 
 	playtimesCached = getAllUsersPlaytimesInSeconds()
+
+	for _, seconds := range playtimesCached {
+		totalHoursPlayedCached += float64(seconds) / 60 / 60
+	}
 
 	getAllHistoricalUsernames() // Updates the nHistoricalUsersCached
 	firstLogDate = getFirstLogDate()
