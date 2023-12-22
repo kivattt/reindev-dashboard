@@ -16,7 +16,8 @@
 
 # Important info
 This is an HTTP server. Everything can be intercepted by your ISP, local starbucks squatter or big brother \
-So use a unique password, and not one you use elsewhere.
+So use a unique password, and not one you use elsewhere. \
+Alternatively, use a reverse proxy like [NGINX](https://docs.nginx.com/nginx/admin-guide/web-server/reverse-proxy/) or [caddy](https://caddyserver.com/)
 
 The admin user has full access to the tools \
 The staff user only has access to the `find-alts` tool, because it should not leak any IP addresses \
