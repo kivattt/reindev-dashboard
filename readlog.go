@@ -87,7 +87,7 @@ func getUsernameAndIP(message string) (string, string, error) {
 
 // Returns Username, join=0 disconnect=1 disconnect all (server stopped)=2, error
 func getUsernameJoinOrLeave(message string) (string, int, error) {
-	if message == "Stopping server" || strings.HasPrefix(message, "Starting Minecraft server version: "){
+	if message == "Stopping server" || strings.HasPrefix(message, "Server started in ") {
 		return "", 2, nil
 	}
 

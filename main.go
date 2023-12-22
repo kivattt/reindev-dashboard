@@ -91,8 +91,8 @@ type FindAltsPage struct {
 }
 
 type UsernameAndPlaytime struct {
-	Username string
-	Playtime string
+	Username        string
+	Playtime        string
 	PlaytimeSeconds int
 }
 
@@ -301,7 +301,11 @@ func getAllUsersPlaytimesInSeconds() map[string]int {
 				playtimes[username] = 0
 			}
 		case 1: // Disconnect
-			playersOnline = slices.DeleteFunc(playersOnline, func(e string) bool {return e == username})
+			if !slices.Contains(playersOnline, username) {
+				continue
+			}
+
+			playersOnline = slices.DeleteFunc(playersOnline, func(e string) bool { return e == username })
 
 			lastJoinTime, ok := lastJoins[username]
 			if !ok {
@@ -493,9 +497,6 @@ func main() {
 	}
 
 	playtimesCached = getAllUsersPlaytimesInSeconds()
-/*	for a, b := range playTimesCached {
-		fmt.Println(a, b)
-	}*/
 
 	getAllHistoricalUsernames() // Updates the nHistoricalUsersCached
 	firstLogDate = getFirstLogDate()
