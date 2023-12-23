@@ -516,5 +516,5 @@ func main() {
 	http.HandleFunc("/img/bg.png", bgPNGHandler)
 	http.HandleFunc("/img/angel.png", angelPNGHandler)
 
-	http.ListenAndServe(":"+config.Port, nil)
+	log.Fatal(http.ListenAndServe(":"+config.Port, nil))
 }

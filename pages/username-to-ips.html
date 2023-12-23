@@ -47,7 +47,7 @@
 		{{else if not .IPs}}
 			No IPs found
 		{{else}}
-			{{range .IPs}}{{.}}<br>{{end}}
+			{{range .IPs}}<a href="https://whatismyipaddress.com/ip/{{.}}">{{.}}</a><br>{{end}}
 		{{end}}
 	</div>
 </body>
