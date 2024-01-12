@@ -20,5 +20,5 @@ So use a unique password, and not one you use elsewhere. \
 Alternatively, use a reverse proxy like [NGINX](https://docs.nginx.com/nginx/admin-guide/web-server/reverse-proxy/) or [caddy](https://caddyserver.com/)
 
 The admin user has full access to the tools \
-The staff user only has access to the `find-alts` tool, because it should not leak any IP addresses \
+The staff user only has access to the `find-alts` and `playtimes` tool, because they should not leak any IP addresses \
 Give your staff team access to the staff user, to not leak any IP addresses from the `server.log`

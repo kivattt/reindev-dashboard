@@ -72,6 +72,8 @@ func getUsernameAndIP(message string) (string, string, error) {
 
 	if ipFieldStartIdx == -1 || ipFieldEndIdx == -1 || ipEndIdx == -1 {
 		return "", "", errors.New("")
+	} else if ipFieldStartIdx+2 >= len(message) || ipEndIdx >= len(message) {
+		return "", "", errors.New("Invalid log line")
 	}
 
 	ip := message[ipFieldStartIdx+2 : ipEndIdx]
