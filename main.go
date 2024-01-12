@@ -357,6 +357,7 @@ func getAllUsersPlaytimesInSeconds() map[string]int {
 }
 
 func findAlts(targetUsername string) []string {
+	// FIXME: Send a "username too long" message to the user
 	if len(targetUsername) < 3 || len(targetUsername) > 26 { // Arbitrary limit at this point
 		return []string{}
 	}

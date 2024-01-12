@@ -72,7 +72,7 @@ func getUsernameAndIP(message string) (string, string, error) {
 
 	if ipFieldStartIdx == -1 || ipFieldEndIdx == -1 || ipEndIdx == -1 {
 		return "", "", errors.New("")
-	} else if ipFieldStartIdx+2 >= len(message) || ipEndIdx >= len(message) {
+	} else if ipEndIdx < ipFieldStartIdx+2 {
 		return "", "", errors.New("Invalid log line")
 	}
 
