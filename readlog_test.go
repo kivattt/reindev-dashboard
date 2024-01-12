@@ -47,3 +47,11 @@ func TestGetUsernameJoinOrLeave(t *testing.T) {
 		}
 	}
 }
+
+func TestGetUsernameAndIP(t *testing.T) {
+	_, _, err := getUsernameAndIP("2025-11-10 12:10:55 [INFO] CONSOLE: Banning ip [15:19:34] [INFO   ] Disconnecting username [/10.10.10.10:12345]: You are banned fr")
+
+	if err == nil {
+		t.Fatalf("Expected error, but got nil")
+	}
+}
