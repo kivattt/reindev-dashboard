@@ -508,8 +508,6 @@ func main() {
 	getAllHistoricalUsernames() // Updates the nHistoricalUsersCached
 	firstLogDate = getFirstLogDate()
 
-	rand.Seed(time.Now().Unix())
-
 	http.HandleFunc("/", handler)
 	http.HandleFunc("/main.css", mainCSSHandler)
 
