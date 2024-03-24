@@ -4,17 +4,22 @@ import (
 	"bufio"
 	"crypto/subtle"
 	"html/template"
+	"io"
 	"log"
 	"math/rand"
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 	"slices"
 	"strings"
 	"time"
+	"strconv"
+
+	"github.com/extemporalgenome/curio"
 )
 
-var templates = template.Must(template.ParseFiles("pages/index.html", "pages/username-to-ips.html", "pages/ip-to-usernames.html", "pages/find-alts.html", "pages/playtimes.html"))
+var templates = template.Must(template.ParseFiles("pages/index.html", "pages/username-to-ips.html", "pages/ip-to-usernames.html", "pages/find-alts.html", "pages/playtimes.html", "pages/log.html"))
 var serverLogPath = "../server.log"
 
 var nHistoricalUsersCached = 0
@@ -96,6 +101,69 @@ type UsernameAndPlaytime struct {
 	Username        string
 	Playtime        string
 	PlaytimeSeconds int
+}
+
+type LogPage struct {
+	LogText string
+	LineCount int
+}
+
+func reverseStr(str string) string {
+	runes := []rune(str)
+	for i, j := 0, len(runes) - 1; i < j; i, j = i+1, j-1 {
+		runes[i], runes[j] = runes[j], runes[i]
+	}
+
+	return string(runes)
+}
+
+func getLastNLinesOfLogWithIPRedacted(n int) string {
+	file, err := os.Open(serverLogPath)
+	if err != nil {
+		return ""
+	}
+	defer file.Close()
+
+	stat, err := file.Stat()
+	if err != nil {
+		return ""
+	}
+
+	rs := curio.NewRevByteScanner(file, stat.Size() - 1)
+
+	lines := []string{}
+	line := ""
+	nLines := 0
+	for {
+		c, err := rs.ReadByte()
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			return ""
+		}
+
+		line += string(c)
+
+		if c == '\n' || c == '\r' {
+			if len(line) > 1 {
+				lines = append(lines, reverseStr(line))
+			}
+			nLines++
+			line = ""
+		}
+
+		if nLines > n {
+			break
+		}
+	}
+
+	ret := ""
+	for i := len(lines) - 1; i >= 0; i-- {
+		ret += lines[i]
+	}
+
+	regexIPAddress := regexp.MustCompile(`[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+`)
+	return regexIPAddress.ReplaceAllString(ret, "REDACTED")
 }
 
 func getFirstLogDate() string {
@@ -432,6 +500,29 @@ func handler(w http.ResponseWriter, r *http.Request) {
 		}
 
 		templates.ExecuteTemplate(w, "playtimes.html", playTimes)
+		return
+	}
+
+	if strings.HasPrefix(r.URL.Path, "/log") {
+		params, _ := url.ParseQuery(r.URL.RawQuery)
+		lineCountStr := params.Get("linecount")
+
+		lineCount := 20
+
+		if lineCountStr != "" {
+			var err error
+			lineCount, err = strconv.Atoi(lineCountStr)
+			if err != nil {
+				lineCount = 20
+			}
+		}
+
+		if lineCount > 10000 || lineCount < 1 {
+			http.Error(w, "linecount must be in range 1 to 10000", 400)
+			return
+		}
+
+		templates.ExecuteTemplate(w, "log.html", LogPage{LogText: getLastNLinesOfLogWithIPRedacted(lineCount), LineCount: lineCount})
 		return
 	}
 

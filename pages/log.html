@@ -24,12 +24,20 @@
 		<a href="/log">Log</a>
 	</div>
 
-	<div class="pagecontent" style="text-align: center">
-		<img src="/img/angel.png">
-		PRS has had <b>{{.NHistoricalUsers}}</b> unique players join the server since <b>{{.FirstLogDate}}</b>
+	<div class="pagecontent">
+		<h1><b>Log</b></h1>
+
+		<textarea id="log" name="log" rows="24" cols="80" spellcheck="false">{{.LogText}}</textarea>
 		<br>
-		In total, they've played for <b>{{.TotalHoursPlayed}}</b> hours...
-		</div>
+
+		<form action="/log" method="get" autocomplete="off">
+			<!-- Disables autofill -->
+			<input autocomplete="false" name="hidden" type="text" style="display:none">
+
+			<label for="linecount">Linecount</label>
+			<input type="text" id="linecount" name="linecount" value="{{.LineCount}}"></input>
+			<input type="submit" value="Reload"></input>
+		</form>
 	</div>
 </body>
 
