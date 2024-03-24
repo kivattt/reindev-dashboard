@@ -9,9 +9,9 @@
 - Change directory into your ReIndev server. This program looks for `server.log` in the parent folder to read from
 - `git clone https://github.com/kivattt/reindev-dashboard`
 - `cd reindev-dashboard`
-- `go build main.go readlog.go`
+- `go build`
 - Set secure passwords for admin and staff in `config.txt`
-- Now launch it with `./main`
+- Now launch it with `./reindev-dashboard`
 - Reach it at `localhost:8080`
 
 # Important info
