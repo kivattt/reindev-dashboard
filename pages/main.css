@@ -123,8 +123,8 @@ a:hover{
 }
 
 .pagecontent input{
-        background-color: #111111;
-        color: #ffffff;
+        background-color: #ffffff;
+        color: #000000;
         border: solid 1px;
         border-color: var(--bordercolor);
 
