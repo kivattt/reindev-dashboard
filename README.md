@@ -1,3 +1,5 @@
+[![Go Report Card](https://goreportcard.com/badge/github.com/kivattt/reindev-dashboard)](https://goreportcard.com/report/github.com/kivattt/reindev-dashboard)
+
 # Features
 - Username to IPs
 - IP to usernames
